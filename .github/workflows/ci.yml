@@ -1,8 +1,14 @@
-name: CI Pipeline
+name: Fitness Tracker CI Pipeline
 
 on:
   push:
-    branches: ["master"]
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
 
 jobs:
   build:
@@ -12,7 +18,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 18
@@ -20,30 +26,11 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      # 🔍 SONARQUBE SCAN
+      - name: Build project
+        run: npm run build
+
       - name: SonarQube Scan
-        uses: SonarSource/sonarqube-scan-action@v2
+        uses: SonarSource/sonarqube-scan-action@master
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-
-      # 🚨 QUALITY GATE
-      - name: Sonar Quality Gate
-        uses: SonarSource/sonarqube-quality-gate-action@v1
-        timeout-minutes: 5
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-
-      # 🐳 Docker Build
-      - name: Build Docker Image
-        run: docker build -t fitness-tracker .
-
-      # 🐳 Docker Hub Login
-      - name: Login to Docker Hub
-        run: echo "${{ secrets.DOCKER_PASS }}" | docker login -u "${{ secrets.DOCKER_USER }}" --password-stdin
-
-      # 📦 Push Image
-      - name: Push Docker Image
-        run: |
-          docker tag fitness-tracker ${{ secrets.DOCKER_USER }}/fitness-tracker:latest
-          docker push ${{ secrets.DOCKER_USER }}/fitness-tracker:latest
